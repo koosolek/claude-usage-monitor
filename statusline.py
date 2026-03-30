@@ -2,7 +2,7 @@
 """
 Claude Code statusline with 5h/7d quota tracking.
 
-Shows: model, context gauge, tokens, git branch, 5h used%, 7d used%,
+Shows: model, context gauge, tokens, git branch, 5h remaining%, 7d remaining%,
 pace indicator, and reset countdown.
 
 Designed for Claude Code on Windows, macOS, and Linux. Caches API responses to
@@ -32,7 +32,7 @@ SHOW_RESET = os.environ.get("CQB_RESET", "1") == "1"
 SHOW_DURATION = os.environ.get("CQB_DURATION", "1") == "1"
 SHOW_BRANCH = os.environ.get("CQB_BRANCH", "1") == "1"
 SHOW_COST = os.environ.get("CQB_COST", "0") == "1"
-SHOW_REMAINING = os.environ.get("CQB_REMAINING", "0") == "1"
+SHOW_REMAINING = os.environ.get("CQB_REMAINING", "1") == "1"
 SHOW_BAR = os.environ.get("CQB_BAR", "1") == "1"
 
 # ── Read stdin ──────────────────────────────────────────────────

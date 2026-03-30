@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.1.2
+
+### Changed
+- Default to remaining % (fuel gauge) for all metrics - context, 5h, and 7d now all count down consistently. Set `CQB_REMAINING=0` to restore used % for quotas.
+
 ## v0.1.1
 
 ### Added
