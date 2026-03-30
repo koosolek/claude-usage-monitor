@@ -37,10 +37,10 @@ After install, restart Claude Code. Your statusline now shows:
 
 ```text
 ◆ Opus │ my-project/main
-▰▰▰▰▱ 75% │ ↑50k ↓12k │ 5h: ▰▱▱▱▱ 20% (1h) │ 7d: ▰▰▰▱▱ 66% │ 2m0s
+▰▰▰▰▱ 75% │ ↑50k ↓12k │ 5h: ▰▰▰▰▱ 80% (1h) │ 7d: ▰▰▱▱▱ 34% │ 2m0s
 ```
 
-- **5h / 7d quota** - know exactly how much you've used
+- **5h / 7d quota** - see how much is left before you hit limits
 - **Context %** - see when you're running low before Claude tells you
 - **Token counts** - input and output for the current session
 - **Reset countdown** - know when your quota replenishes
@@ -79,11 +79,11 @@ If you want to verify the launcher yourself before restarting Claude Code:
 | `my-project/main` | Project name and git branch |
 | `▰▰▰▰▱ 75%` | Context window remaining |
 | `↑50k ↓12k` | Input and output tokens |
-| `5h: ▰▱▱▱▱ 20% (1h)` | 5-hour quota used with bar and reset countdown |
-| `7d: ▰▰▰▱▱ 66%` | 7-day quota used with bar |
+| `5h: ▰▰▰▰▱ 80% (1h)` | 5-hour quota remaining with bar and reset countdown |
+| `7d: ▰▰▱▱▱ 34%` | 7-day quota remaining with bar |
 | `2m0s` | Session duration |
 
-Context shows remaining % (high = good). Quotas show used % (low = good). All bars change from green to yellow to red as usage increases.
+All three bars show remaining % - they start full (green) and drain toward empty (red) as you use more. Set `CQB_REMAINING=0` for used % instead.
 
 ### Color coding
 
@@ -160,7 +160,7 @@ Every segment is toggleable via environment variables. Set them in your shell pr
 | `CQB_CONTEXT_SIZE` | `0` | Show context size label such as `of 1M` |
 | `CQB_PACE` | `0` | Show pacing indicator |
 | `CQB_COST` | `0` | Show session cost |
-| `CQB_REMAINING` | `0` | Show remaining % instead of used % for quotas |
+| `CQB_REMAINING` | `1` | Show remaining % (fuel gauge) for quotas; set `0` for used % |
 | `CQB_BAR` | `1` | Show visual progress bar next to 5h/7d quotas |
 
 ### Presets
