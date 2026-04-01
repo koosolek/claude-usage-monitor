@@ -290,7 +290,7 @@ def fetch_usage_sync():
         os.replace(tmp, CACHE_FILE)
 
     except Exception:
-        pass
+        pass  # Intentional: statusline must never fail visibly
     finally:
         try:
             os.unlink(LOCK_FILE)

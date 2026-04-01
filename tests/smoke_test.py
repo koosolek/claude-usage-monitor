@@ -99,18 +99,8 @@ def smoke_windows_launcher():
 
 
 def shutil_which(name):
-    paths = os.environ.get("PATH", "").split(os.pathsep)
-    exts = [""]
-    if os.name == "nt":
-        exts = os.environ.get("PATHEXT", ".EXE").split(os.pathsep)
-    for directory in paths:
-        if not directory:
-            continue
-        for ext in exts:
-            candidate = pathlib.Path(directory) / f"{name}{ext}"
-            if candidate.exists():
-                return str(candidate)
-    return None
+    import shutil
+    return shutil.which(name)
 
 
 def smoke_installer():
