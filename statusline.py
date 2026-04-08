@@ -273,14 +273,19 @@ def fetch_usage_sync():
             except Exception:
                 return None
 
+        five_hour = data.get("five_hour") or {}
+        seven_day = data.get("seven_day") or {}
+        extra = data.get("extra_usage") or {}
+
         cache_data = {
-            "five_hour_used": data.get("five_hour", {}).get("utilization", 0),
-            "seven_day_used": data.get("seven_day", {}).get("utilization", 0),
-            "five_hour_reset_min": parse_reset_minutes(data.get("five_hour", {}).get("resets_at")),
-            "seven_day_reset_min": parse_reset_minutes(data.get("seven_day", {}).get("resets_at")),
-            "extra_enabled": data.get("extra_usage", {}).get("is_enabled", False),
-            "extra_used": data.get("extra_usage", {}).get("used_credits", 0),
-            "extra_limit": data.get("extra_usage", {}).get("monthly_limit", 0),
+            "five_hour_used": five_hour.get("utilization"),
+            "seven_day_used": seven_day.get("utilization"),
+            "five_hour_reset_min": parse_reset_minutes(five_hour.get("resets_at")),
+            "seven_day_reset_min": parse_reset_minutes(seven_day.get("resets_at")),
+            "extra_enabled": extra.get("is_enabled", False),
+            "extra_used": extra.get("used_credits", 0),
+            "extra_limit": extra.get("monthly_limit", 0),
+            "extra_utilization": extra.get("utilization"),
             "fetched_at": time.time(),
         }
 
@@ -352,6 +357,7 @@ def read_cached_usage():
             "extra_enabled": cache.get("extra_enabled", False),
             "extra_used": cache.get("extra_used", 0),
             "extra_limit": cache.get("extra_limit", 0),
+            "extra_utilization": cache.get("extra_utilization"),
         }
 
     return None
@@ -361,9 +367,8 @@ def read_cached_usage():
 SEP = " \u2502 "  # │
 DIAMOND = "\u25c6"  # ◆
 
-# Context gauge (5 blocks)
-ctx_remaining = 100 - ctx_pct_used
-filled = round(min(100, max(0, ctx_remaining)) / 100.0 * 5)
+# Context gauge (5 blocks) — shows % used
+filled = round(min(100, max(0, ctx_pct_used)) / 100.0 * 5)
 gauge = "\u25b0" * filled + "\u25b1" * (5 - filled)  # ▰▱
 
 # Context size label
@@ -385,7 +390,7 @@ line1 = SEP.join(line1_parts)
 
 # Line 2: context gauge, quota, duration
 ctx_color = color_pct(ctx_pct_used)
-ctx_str = f"{ctx_color}{gauge}{N} {ctx_remaining}%"
+ctx_str = f"Ctx: {ctx_color}{gauge}{N} {ctx_pct_used}%"
 if SHOW_CONTEXT_SIZE:
     ctx_str += f" of {ctx_label}"
 line2_parts = [ctx_str]
@@ -399,22 +404,33 @@ usage = read_cached_usage()
 if usage:
     u5 = usage["u5"]
     u7 = usage["u7"]
-    r5 = usage["r5"]
-    r7 = usage["r7"]
+    is_enterprise = u5 is None and u7 is None
 
-    pace5 = pace_indicator(u5, r5, 300) if SHOW_PACE else ""
-    pace7 = pace_indicator(u7, r7, 10080) if SHOW_PACE else ""
-    reset5 = format_reset(r5) if SHOW_RESET else ""
-    reset7 = format_reset(r7) if (SHOW_RESET and u7 is not None and int(u7) >= 70) else ""
+    if is_enterprise and usage["extra_enabled"]:
+        # Enterprise plan: show spend limit as primary metric
+        eu = float(usage["extra_used"])
+        el = float(usage["extra_limit"])
+        eu_pct = usage["extra_utilization"] or (eu * 100 / el if el > 0 else 0)
+        used = int(eu_pct)
+        c = color_pct(used)
+        filled = round(min(100, max(0, used)) / 100.0 * 5)
+        bar = f"{c}{chr(0x25b0) * filled}{chr(0x25b1) * (5 - filled)}{N}"
+        line2_parts.append(f"{bar} {c}${eu / 100:.2f}{N}/${el / 100:.0f} ({used}%)")
+    else:
+        # Pro/Max plan: show 5h/7d rate limits
+        pace5 = pace_indicator(u5, usage["r5"], 300) if SHOW_PACE else ""
+        pace7 = pace_indicator(u7, usage["r7"], 10080) if SHOW_PACE else ""
+        reset5 = format_reset(usage["r5"]) if SHOW_RESET else ""
+        reset7 = format_reset(usage["r7"]) if (SHOW_RESET and u7 is not None and int(u7) >= 70) else ""
 
-    line2_parts.append(f"5h: {used_pct_str(u5)}{pace5}{reset5}")
-    line2_parts.append(f"7d: {used_pct_str(u7)}{pace7}{reset7}")
+        line2_parts.append(f"5h: {used_pct_str(u5)}{pace5}{reset5}")
+        line2_parts.append(f"7d: {used_pct_str(u7)}{pace7}{reset7}")
 
-    # Extra usage (only show when 5h is nearly exhausted)
-    if usage["extra_enabled"] and u5 is not None and int(u5) >= 80:
-        eu = int(usage["extra_used"])
-        el = int(usage["extra_limit"])
-        line2_parts.append(f"${eu / 100:.2f}/${el / 100:.2f}")
+        # Extra usage (only show when 5h is nearly exhausted)
+        if usage["extra_enabled"] and u5 is not None and int(u5) >= 80:
+            eu = int(usage["extra_used"])
+            el = int(usage["extra_limit"])
+            line2_parts.append(f"${eu / 100:.2f}/${el / 100:.2f}")
 else:
     if not get_oauth_token():
         line2_parts.append(f"5h: {D}no token{N}")
