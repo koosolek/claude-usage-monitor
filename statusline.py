@@ -218,12 +218,25 @@ def get_oauth_token():
     tok = os.environ.get("CLAUDE_CODE_OAUTH_TOKEN")
     if tok:
         return tok
-    # Credentials file
+    # macOS Keychain (current storage location)
+    try:
+        r = subprocess.run(
+            ["security", "find-generic-password", "-s", "Claude Code-credentials", "-w"],
+            capture_output=True, text=True, timeout=3,
+        )
+        if r.returncode == 0 and r.stdout.strip():
+            creds = json.loads(r.stdout.strip())
+            tok = (creds.get("claudeAiOauth") or {}).get("accessToken")
+            if tok:
+                return tok
+    except Exception:
+        pass
+    # Legacy credentials file (older Claude Code versions)
     cred_path = Path.home() / ".claude" / ".credentials.json"
     if cred_path.exists():
         try:
             creds = json.loads(cred_path.read_text(encoding="utf-8"))
-            return creds.get("claudeAiOauth", {}).get("accessToken")
+            return (creds.get("claudeAiOauth") or {}).get("accessToken")
         except Exception:
             pass
     return None
