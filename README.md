@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-  Claude Code statusline plugin that shows your quota usage, context, tokens, and reset countdowns directly in the terminal.
+  Claude Code statusline plugin that shows your quota usage, context, and tokens directly in the terminal.
   <br>
   No API keys. No telemetry. No dependencies. Runs locally.
 </p>
@@ -38,13 +38,13 @@ After install, restart Claude Code. Your statusline now shows:
 
 ```text
 ◆ Opus │ my-project/main
-▰▰▰▰▱ 75% │ ↑50k ↓12k │ 5h: ▰▰▰▰▱ 80% (1h) │ 7d: ▰▰▱▱▱ 34% │ 2m0s
+Ctx: ▰▱▱▱ 25% │ ↑50k ↓12k │ 5h: ▰▰▰▱ 80% │ 7d: ▰▱▱▱ 34%
 ```
 
-- **5h / 7d quota** - see how much is left before you hit limits
+- **5h / 7d quota** - see how much you've used before you hit limits
 - **Context %** - see when you're running low before Claude tells you
 - **Token counts** - input and output for the current session
-- **Reset countdown** - know when your quota replenishes
+- **Reset countdown** - once a quota hits 100%, its bar is replaced with a "resets in" countdown
 
 Uses your existing Claude Code OAuth session. No extra API key or Python packages needed. Windows launches Python directly - no Git Bash requirement.
 
@@ -78,13 +78,12 @@ If you want to verify the launcher yourself before restarting Claude Code:
 |---|---|
 | `◆ Opus` | Active model |
 | `my-project/main` | Project name and git branch |
-| `▰▰▰▰▱ 75%` | Context window remaining |
+| `Ctx: ▰▱▱▱ 25%` | Context window used |
 | `↑50k ↓12k` | Input and output tokens |
-| `5h: ▰▰▰▰▱ 80% (1h)` | 5-hour quota remaining with bar and reset countdown |
-| `7d: ▰▰▱▱▱ 34%` | 7-day quota remaining with bar |
-| `2m0s` | Session duration |
+| `5h: ▰▰▰▱ 80%` | 5-hour quota used, with bar |
+| `7d: ▰▱▱▱ 34%` | 7-day quota used, with bar |
 
-All three bars show remaining % - they start full (green) and drain toward empty (red) as you use more. Set `CQB_REMAINING=0` for used % instead.
+All bars show used % by default - they start empty (green) and fill toward full (red) as you use more. Set `CQB_REMAINING=1` for a draining remaining-% fuel gauge instead. Once a quota hits 100% used, its bar and percentage are replaced by a `resets in <time>` countdown, since the bar has nothing left to show at that point.
 
 ### Color coding
 
@@ -155,14 +154,14 @@ Every segment is toggleable via environment variables. Set them in your shell pr
 | Variable | Default | Description |
 |---|---|---|
 | `CQB_TOKENS` | `1` | Show token counts |
-| `CQB_RESET` | `1` | Show reset countdowns |
-| `CQB_DURATION` | `1` | Show session duration |
 | `CQB_BRANCH` | `1` | Show git branch |
 | `CQB_CONTEXT_SIZE` | `0` | Show context size label such as `of 1M` |
 | `CQB_PACE` | `0` | Show pacing indicator |
 | `CQB_COST` | `0` | Show session cost |
-| `CQB_REMAINING` | `1` | Show remaining % (fuel gauge) for quotas; set `0` for used % |
+| `CQB_REMAINING` | `0` | Show used % for quotas (fills as you use more); set `1` for a draining remaining-% fuel gauge |
 | `CQB_BAR` | `1` | Show visual progress bar next to 5h/7d quotas |
+
+There's no toggle for reset countdowns or session duration - a quota's bar automatically switches to a `resets in <time>` countdown once it hits 100% used, and session duration was dropped as noise on a glanceable statusline.
 
 ### Presets
 
@@ -179,7 +178,7 @@ Every segment is toggleable via environment variables. Set them in your shell pr
 ![Minimal statusline](assets/minimal.png)
 
 ```json
-{ "env": { "CQB_TOKENS": "0", "CQB_RESET": "0", "CQB_DURATION": "0" } }
+{ "env": { "CQB_TOKENS": "0" } }
 ```
 
 **Heavy context**

@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+- Default to used % (growing bar) for 5h/7d quotas, matching the context gauge and Enterprise spend display. Set `CQB_REMAINING=1` to restore the draining remaining-% fuel gauge.
+- All progress bars (context, 5h/7d, Enterprise spend) shrink from 5 blocks to 4 to save space.
+- Once a quota hits 100% used, its bar and percentage are replaced by a `resets in <time>` countdown instead of a maxed-out, uninformative bar.
+
+### Removed
+- `CQB_RESET` and `CQB_DURATION` env vars and the session-duration segment - reset countdowns are now automatic (see above) rather than an always-on toggle, and session duration wasn't useful on a glanceable statusline.
+
+### Fixed
+- Context gauge and its smoke test/README description had drifted out of sync since the Enterprise support change (used% in code, remaining% in docs/tests) - both now consistently document/test used%.
+
 ## v0.1.2
 
 ### Changed

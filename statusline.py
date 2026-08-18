@@ -2,8 +2,9 @@
 """
 Claude Code statusline with 5h/7d quota tracking.
 
-Shows: model, context gauge, tokens, git branch, 5h remaining%, 7d remaining%,
-pace indicator, and reset countdown.
+Shows: model, context gauge, tokens, git branch, 5h used%, 7d used%, and a
+pace indicator. Once a quota is fully used, its bar is replaced by a reset
+countdown.
 
 Designed for Claude Code on Windows, macOS, and Linux. Caches API responses to
 the system temp directory for 5 minutes.
@@ -28,11 +29,9 @@ if sys.stdout.encoding != "utf-8":
 SHOW_CONTEXT_SIZE = os.environ.get("CQB_CONTEXT_SIZE", "0") == "1"
 SHOW_TOKENS = os.environ.get("CQB_TOKENS", "1") == "1"
 SHOW_PACE = os.environ.get("CQB_PACE", "0") == "1"
-SHOW_RESET = os.environ.get("CQB_RESET", "1") == "1"
-SHOW_DURATION = os.environ.get("CQB_DURATION", "1") == "1"
 SHOW_BRANCH = os.environ.get("CQB_BRANCH", "1") == "1"
 SHOW_COST = os.environ.get("CQB_COST", "0") == "1"
-SHOW_REMAINING = os.environ.get("CQB_REMAINING", "1") == "1"
+SHOW_REMAINING = os.environ.get("CQB_REMAINING", "0") == "1"
 SHOW_BAR = os.environ.get("CQB_BAR", "1") == "1"
 
 # ── Read stdin ──────────────────────────────────────────────────
@@ -92,13 +91,8 @@ except (KeyError, TypeError):
     pass
 
 cost_usd = 0.0
-duration_ms = 0
 try:
     cost_usd = float(d["cost"]["total_cost_usd"] or 0)
-except (KeyError, TypeError, ValueError):
-    pass
-try:
-    duration_ms = int(d["cost"]["total_duration_ms"] or 0)
 except (KeyError, TypeError, ValueError):
     pass
 
@@ -145,25 +139,16 @@ def compact(n):
     return str(int(n))
 
 
-def format_duration(ms):
-    if ms >= 3_600_000:
-        return f"{ms // 3_600_000}h{(ms // 60_000) % 60}m"
-    if ms >= 60_000:
-        return f"{ms // 60_000}m{(ms // 1000) % 60}s"
-    return f"{ms // 1000}s"
-
-
 def format_reset(minutes):
-    """Format reset countdown."""
+    """Format a duration in minutes as a short human string, e.g. '1h', '3d'."""
     if minutes is None:
-        return ""
+        return "--"
     m = int(minutes)
     if m >= 1440:
-        return f" {D}({m // 1440}d){N}"
+        return f"{m // 1440}d"
     if m >= 60:
-        return f" {D}({m // 60}h){N}"
-    return f" {D}({m}m){N}"
-
+        return f"{m // 60}h"
+    return f"{m}m"
 
 
 def used_pct_str(used_pct):
@@ -174,13 +159,21 @@ def used_pct_str(used_pct):
     c = color_pct(used)
     val = 100 - used if SHOW_REMAINING else used
     if SHOW_BAR:
-        filled = round(min(100, max(0, val)) / 100.0 * 5)
+        filled = round(min(100, max(0, val)) / 100.0 * 4)
         filled_chars = "\u25b0" * filled
-        empty_chars = "\u25b1" * (5 - filled)
+        empty_chars = "\u25b1" * (4 - filled)
         bar = f"{c}{filled_chars}{empty_chars}{N} "
     else:
         bar = ""
     return f"{bar}{c}{val}%{N}"
+
+
+def quota_segment(label, used_pct, remain_min, pace_str):
+    """Render a quota line: normal bar+% while there's headroom, or a reset
+    countdown once the quota is fully used (the bar has nothing left to show)."""
+    if used_pct is not None and int(used_pct) >= 100:
+        return f"{label}: {D}resets in {format_reset(remain_min)}{N}"
+    return f"{label}: {used_pct_str(used_pct)}{pace_str}"
 
 
 def pace_indicator(used_pct, remain_min, window_min):
@@ -380,9 +373,9 @@ def read_cached_usage():
 SEP = " \u2502 "  # │
 DIAMOND = "\u25c6"  # ◆
 
-# Context gauge (5 blocks) — shows % used
-filled = round(min(100, max(0, ctx_pct_used)) / 100.0 * 5)
-gauge = "\u25b0" * filled + "\u25b1" * (5 - filled)  # ▰▱
+# Context gauge (4 blocks) — shows % used
+filled = round(min(100, max(0, ctx_pct_used)) / 100.0 * 4)
+gauge = "\u25b0" * filled + "\u25b1" * (4 - filled)  # ▰▱
 
 # Context size label
 if ctx_size >= 1_000_000:
@@ -401,7 +394,7 @@ if proj_name:
 
 line1 = SEP.join(line1_parts)
 
-# Line 2: context gauge, quota, duration
+# Line 2: context gauge, quota
 ctx_color = color_pct(ctx_pct_used)
 ctx_str = f"Ctx: {ctx_color}{gauge}{N} {ctx_pct_used}%"
 if SHOW_CONTEXT_SIZE:
@@ -426,18 +419,16 @@ if usage:
         eu_pct = usage["extra_utilization"] or (eu * 100 / el if el > 0 else 0)
         used = int(eu_pct)
         c = color_pct(used)
-        filled = round(min(100, max(0, used)) / 100.0 * 5)
-        bar = f"{c}{chr(0x25b0) * filled}{chr(0x25b1) * (5 - filled)}{N}"
+        filled = round(min(100, max(0, used)) / 100.0 * 4)
+        bar = f"{c}{chr(0x25b0) * filled}{chr(0x25b1) * (4 - filled)}{N}"
         line2_parts.append(f"{bar} {c}${eu / 100:.2f}{N}/${el / 100:.0f} ({used}%)")
     else:
         # Pro/Max plan: show 5h/7d rate limits
         pace5 = pace_indicator(u5, usage["r5"], 300) if SHOW_PACE else ""
         pace7 = pace_indicator(u7, usage["r7"], 10080) if SHOW_PACE else ""
-        reset5 = format_reset(usage["r5"]) if SHOW_RESET else ""
-        reset7 = format_reset(usage["r7"]) if (SHOW_RESET and u7 is not None and int(u7) >= 70) else ""
 
-        line2_parts.append(f"5h: {used_pct_str(u5)}{pace5}{reset5}")
-        line2_parts.append(f"7d: {used_pct_str(u7)}{pace7}{reset7}")
+        line2_parts.append(quota_segment("5h", u5, usage["r5"], pace5))
+        line2_parts.append(quota_segment("7d", u7, usage["r7"], pace7))
 
         # Extra usage (only show when 5h is nearly exhausted)
         if usage["extra_enabled"] and u5 is not None and int(u5) >= 80:
@@ -455,10 +446,6 @@ else:
 # Cost
 if SHOW_COST and cost_usd > 0:
     line2_parts.append(f"{D}${cost_usd:.2f}{N}")
-
-# Duration
-if SHOW_DURATION:
-    line2_parts.append(f"{D}{format_duration(duration_ms)}{N}")
 
 line2 = SEP.join(line2_parts)
 

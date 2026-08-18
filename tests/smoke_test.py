@@ -19,8 +19,6 @@ STATUSLINE_CMD = ROOT / "statusline.cmd"
 def run(command, stdin_text="", extra_env=None):
     env = os.environ.copy()
     env["CQB_TOKENS"] = "0"
-    env["CQB_RESET"] = "0"
-    env["CQB_DURATION"] = "0"
     env["CQB_BRANCH"] = "0"
     env["PYTHONIOENCODING"] = "utf-8"
     env.pop("CLAUDE_CODE_OAUTH_TOKEN", None)
@@ -67,7 +65,7 @@ def smoke_statusline_py():
     proc = run([sys.executable, str(STATUSLINE_PY)], json.dumps(payload))
     assert_ok(proc, "statusline.py")
     assert_contains(proc.stdout, "Opus", "statusline.py")
-    assert_contains(proc.stdout, "75%", "statusline.py")
+    assert_contains(proc.stdout, "25%", "statusline.py")
 
 
 def smoke_empty_stdin():
@@ -276,6 +274,52 @@ def smoke_bar_toggle():
             os.unlink(cache_file)
 
 
+def smoke_quota_exhausted():
+    import time as _time
+
+    payload = {
+        "model": {"display_name": "Opus"},
+        "context_window": {
+            "used_percentage": 10,
+            "context_window_size": 200000,
+            "total_input_tokens": 0,
+            "total_output_tokens": 0,
+        },
+        "cost": {"total_cost_usd": 0, "total_duration_ms": 0},
+        "workspace": {"project_dir": str(ROOT)},
+    }
+    stdin = json.dumps(payload)
+
+    cache_file = os.path.join(tempfile.gettempdir(), "claude-sl-usage.json")
+    cache_backup = None
+    if os.path.exists(cache_file):
+        cache_backup = pathlib.Path(cache_file).read_text(encoding="utf-8")
+    cache_data = json.dumps({
+        "five_hour_used": 100,
+        "seven_day_used": 40,
+        "five_hour_reset_min": 90,
+        "seven_day_reset_min": 4320,
+        "extra_enabled": False,
+        "extra_used": 0,
+        "extra_limit": 0,
+        "fetched_at": _time.time(),
+    })
+    pathlib.Path(cache_file).write_text(cache_data, encoding="utf-8")
+
+    try:
+        proc = run([sys.executable, str(STATUSLINE_PY)], stdin)
+        assert_ok(proc, "quota exhausted")
+        assert_contains(proc.stdout, "5h: ", "quota exhausted")
+        assert_contains(proc.stdout, "resets in 1h", "quota exhausted")
+        assert_contains(proc.stdout, "7d: ", "quota exhausted")
+        assert_contains(proc.stdout, "40%", "quota exhausted")
+    finally:
+        if cache_backup is not None:
+            pathlib.Path(cache_file).write_text(cache_backup, encoding="utf-8")
+        elif os.path.exists(cache_file):
+            os.unlink(cache_file)
+
+
 def main():
     smoke_statusline_py()
     smoke_empty_stdin()
@@ -285,6 +329,7 @@ def main():
     smoke_unix_install_wrapper()
     smoke_windows_install_wrapper()
     smoke_bar_toggle()
+    smoke_quota_exhausted()
     print("smoke tests passed")
 
 
