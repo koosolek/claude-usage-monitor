@@ -1,8 +1,8 @@
 <h1 align="center">claude-usage-monitor</h1>
 
 <p align="center">
-  <a href="https://github.com/aiedwardyi/claude-usage-monitor/stargazers"><img src="https://img.shields.io/github/stars/aiedwardyi/claude-usage-monitor?style=social" alt="GitHub Stars"></a>
-  <a href="https://github.com/aiedwardyi/claude-usage-monitor/actions/workflows/smoke-tests.yml"><img src="https://github.com/aiedwardyi/claude-usage-monitor/actions/workflows/smoke-tests.yml/badge.svg" alt="Smoke Tests"></a>
+  <a href="https://github.com/koosolek/claude-usage-monitor/stargazers"><img src="https://img.shields.io/github/stars/koosolek/claude-usage-monitor?style=social" alt="GitHub Stars"></a>
+  <a href="https://github.com/koosolek/claude-usage-monitor/actions/workflows/smoke-tests.yml"><img src="https://github.com/koosolek/claude-usage-monitor/actions/workflows/smoke-tests.yml/badge.svg" alt="Smoke Tests"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green.svg" alt="MIT License"></a>
 </p>
 
@@ -13,9 +13,13 @@
 </p>
 
 <p align="center">
+  <sub>A personal fork of <a href="https://github.com/aiedwardyi/claude-usage-monitor">aiedwardyi/claude-usage-monitor</a>, customized for running the same statusline consistently across multiple Claude plans (Pro, Team, Enterprise) - see <a href="#enterprise-plans">Enterprise plans</a> below. Defaults and behavior have diverged from upstream; if you want the original project, use the link above.</sub>
+</p>
+
+<p align="center">
   <img src="./assets/demo-animated.gif" alt="claude-usage-monitor demo">
   <br>
-  <sub>Real-time usage tracking - green to yellow to red as your session progresses.</sub>
+  <sub>Real-time usage tracking - green to yellow to red as your session progresses, then a reset countdown once a quota is fully used.</sub>
 </p>
 
 ## Quickstart
@@ -23,13 +27,13 @@
 ### Windows PowerShell
 
 ```powershell
-irm https://raw.githubusercontent.com/aiedwardyi/claude-usage-monitor/v0.1.2/install.ps1 | iex
+irm https://raw.githubusercontent.com/koosolek/claude-usage-monitor/v0.1.3/install.ps1 | iex
 ```
 
 ### macOS / Linux
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/aiedwardyi/claude-usage-monitor/v0.1.2/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/koosolek/claude-usage-monitor/v0.1.3/install.sh | bash
 ```
 
 ### What you get
@@ -51,9 +55,9 @@ Uses your existing Claude Code OAuth session. No extra API key or Python package
 ### Prefer to audit first
 
 ```bash
-git clone https://github.com/aiedwardyi/claude-usage-monitor.git
+git clone https://github.com/koosolek/claude-usage-monitor.git
 cd claude-usage-monitor
-git switch --detach v0.1.2
+git switch --detach v0.1.3
 python install.py
 ```
 
@@ -83,7 +87,7 @@ If you want to verify the launcher yourself before restarting Claude Code:
 | `5h: ▰▰▰▱ 80%` | 5-hour quota used, with bar |
 | `7d: ▰▱▱▱ 34%` | 7-day quota used, with bar |
 
-All bars show used % by default - they start empty (green) and fill toward full (red) as you use more. Set `CQB_REMAINING=1` for a draining remaining-% fuel gauge instead. Once a quota hits 100% used, its bar and percentage are replaced by a `resets in <time>` countdown, since the bar has nothing left to show at that point.
+All bars show used % by default - they start empty (green) and fill toward full (red) as you use more. Set `CQB_REMAINING=1` for a draining remaining-% fuel gauge instead.
 
 ### Color coding
 
@@ -93,12 +97,26 @@ All bars show used % by default - they start empty (green) and fill toward full 
 | Yellow | 70-90% used |
 | Red | Over 90% used |
 
+### Once a quota is fully used
+
+The bar and percentage for that quota are replaced by a `resets in <time>` countdown, since a maxed-out bar has nothing useful left to show:
+
+![Exhausted quota statusline](assets/exhausted.png)
+
+## Enterprise plans
+
+Anthropic's usage API returns `null` 5h/7d rate limits for Enterprise plans - they're billed against a monthly spend limit instead. This is detected automatically and swaps the second line for a spend display:
+
+![Enterprise spend statusline](assets/enterprise.png)
+
+No configuration needed - if your plan reports a spend limit instead of 5h/7d utilization, the statusline shows it that way on its own.
+
 ## Trust and security
 
 At runtime, the tool:
 
 - reads Claude Code session JSON from `stdin`
-- reads `~/.claude/.credentials.json` for `claudeAiOauth.accessToken` (unless `CLAUDE_CODE_OAUTH_TOKEN` is set)
+- reads your OAuth token from the macOS Keychain (falling back to `~/.claude/.credentials.json`) for `claudeAiOauth.accessToken` (unless `CLAUDE_CODE_OAUTH_TOKEN` is set)
 - runs `git rev-parse --abbrev-ref HEAD` for the branch name
 - writes `claude-sl-usage.json` and `claude-sl-usage.lock` in your system temp directory
 - makes one HTTPS request to `https://api.anthropic.com/api/oauth/usage`
@@ -192,9 +210,9 @@ There's no toggle for reset countdowns or session duration - a quota's bar autom
 ## Manual install
 
 ```bash
-git clone https://github.com/aiedwardyi/claude-usage-monitor.git
+git clone https://github.com/koosolek/claude-usage-monitor.git
 cd claude-usage-monitor
-git switch --detach v0.1.2
+git switch --detach v0.1.3
 python install.py
 ```
 
@@ -229,7 +247,7 @@ Make sure `python3`, `python`, or `py -3` works from your shell.
 The first API call runs in the background. Wait a few seconds and let Claude Code refresh.
 
 **The statusline shows `5h: no token | 7d: no token`**
-The usage API requires an OAuth login. If you logged in with an API key, run `claude login` to authenticate via browser instead. The OAuth token is stored in `~/.claude/.credentials.json`.
+The usage API requires an OAuth login. If you logged in with an API key, run `claude login` to authenticate via browser instead. The OAuth token is read from the macOS Keychain, or `~/.claude/.credentials.json` on older Claude Code versions.
 
 **Unicode characters look wrong**
 Use a UTF-8 terminal font. On older Windows terminals, run `chcp 65001`.

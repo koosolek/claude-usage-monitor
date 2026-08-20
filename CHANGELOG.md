@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v0.1.3
 
 ### Changed
 - Default to used % (growing bar) for 5h/7d quotas, matching the context gauge and Enterprise spend display. Set `CQB_REMAINING=1` to restore the draining remaining-% fuel gauge.
@@ -12,6 +12,11 @@
 
 ### Fixed
 - Context gauge and its smoke test/README description had drifted out of sync since the Enterprise support change (used% in code, remaining% in docs/tests) - both now consistently document/test used%.
+
+### Docs
+- README, SECURITY.md, badges, and install links now point at this fork (`koosolek/claude-usage-monitor`) instead of upstream, since defaults have diverged.
+- Documented the Enterprise spend-limit display (previously undocumented) with a dedicated screenshot.
+- Refreshed every preset screenshot and the demo GIF to reflect the current used%/4-block/reset-on-exhaustion behavior; added a screenshot for the exhausted-quota state.
 
 ## v0.1.2
 
