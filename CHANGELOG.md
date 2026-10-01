@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+- Progress bars now use `■□` (U+25A0/U+25A1) instead of `▰▱` (U+25B0/U+25B1). Common coding fonts like JetBrains Mono lack the old glyphs, so terminals such as Ghostty fell back to another font and the bars rendered misaligned and mis-sized.
+
 ## v0.1.3
 
 ### Changed

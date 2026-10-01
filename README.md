@@ -42,7 +42,7 @@ After install, restart Claude Code. Your statusline now shows:
 
 ```text
 ◆ Opus │ my-project/main
-Ctx: ▰▱▱▱ 25% │ ↑50k ↓12k │ 5h: ▰▰▰▱ 80% │ 7d: ▰▱▱▱ 34%
+Ctx: ■□□□ 25% │ ↑50k ↓12k │ 5h: ■■■□ 80% │ 7d: ■□□□ 34%
 ```
 
 - **5h / 7d quota** - see how much you've used before you hit limits
@@ -82,10 +82,10 @@ If you want to verify the launcher yourself before restarting Claude Code:
 |---|---|
 | `◆ Opus` | Active model |
 | `my-project/main` | Project name and git branch |
-| `Ctx: ▰▱▱▱ 25%` | Context window used |
+| `Ctx: ■□□□ 25%` | Context window used |
 | `↑50k ↓12k` | Input and output tokens |
-| `5h: ▰▰▰▱ 80%` | 5-hour quota used, with bar |
-| `7d: ▰▱▱▱ 34%` | 7-day quota used, with bar |
+| `5h: ■■■□ 80%` | 5-hour quota used, with bar |
+| `7d: ■□□□ 34%` | 7-day quota used, with bar |
 
 All bars show used % by default - they start empty (green) and fill toward full (red) as you use more. Set `CQB_REMAINING=1` for a draining remaining-% fuel gauge instead.
 

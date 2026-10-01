@@ -160,8 +160,8 @@ def used_pct_str(used_pct):
     val = 100 - used if SHOW_REMAINING else used
     if SHOW_BAR:
         filled = round(min(100, max(0, val)) / 100.0 * 4)
-        filled_chars = "\u25b0" * filled
-        empty_chars = "\u25b1" * (4 - filled)
+        filled_chars = "\u25a0" * filled
+        empty_chars = "\u25a1" * (4 - filled)
         bar = f"{c}{filled_chars}{empty_chars}{N} "
     else:
         bar = ""
@@ -375,7 +375,7 @@ DIAMOND = "\u25c6"  # ◆
 
 # Context gauge (4 blocks) — shows % used
 filled = round(min(100, max(0, ctx_pct_used)) / 100.0 * 4)
-gauge = "\u25b0" * filled + "\u25b1" * (4 - filled)  # ▰▱
+gauge = "\u25a0" * filled + "\u25a1" * (4 - filled)  # ■□
 
 # Context size label
 if ctx_size >= 1_000_000:
@@ -420,7 +420,7 @@ if usage:
         used = int(eu_pct)
         c = color_pct(used)
         filled = round(min(100, max(0, used)) / 100.0 * 4)
-        bar = f"{c}{chr(0x25b0) * filled}{chr(0x25b1) * (4 - filled)}{N}"
+        bar = f"{c}{chr(0x25a0) * filled}{chr(0x25a1) * (4 - filled)}{N}"
         line2_parts.append(f"{bar} {c}${eu / 100:.2f}{N}/${el / 100:.0f} ({used}%)")
     else:
         # Pro/Max plan: show 5h/7d rate limits

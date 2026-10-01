@@ -254,13 +254,13 @@ def smoke_bar_toggle():
         proc = run([sys.executable, str(STATUSLINE_PY)], stdin)
         assert_ok(proc, "bar on (default)")
         clean = ansi_re.sub("", proc.stdout)
-        bar_on_count = clean.count("\u25b0") + clean.count("\u25b1")
+        bar_on_count = clean.count("\u25a0") + clean.count("\u25a1")
 
         # Bar off: should have fewer bar chars (only context gauge)
         proc = run([sys.executable, str(STATUSLINE_PY)], stdin, extra_env={"CQB_BAR": "0"})
         assert_ok(proc, "bar off")
         clean = ansi_re.sub("", proc.stdout)
-        bar_off_count = clean.count("\u25b0") + clean.count("\u25b1")
+        bar_off_count = clean.count("\u25a0") + clean.count("\u25a1")
 
         if bar_on_count <= bar_off_count:
             raise AssertionError(
